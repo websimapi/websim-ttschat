@@ -82,6 +82,7 @@
             flex-grow: 1;
             display: flex;
             height: 100vh;
+            position: relative; /* For positioning children */
         }
 
         .tab-content {
@@ -101,12 +102,13 @@
             overflow-y: auto;
             padding: 20px 20px 0 20px;
             display: flex;
-            flex-direction: column-reverse;
+            flex-direction: column;
         }
         
         #messages-wrapper {
             display: flex;
             flex-direction: column;
+            margin-top: auto; /* Pushes messages to the bottom */
         }
 
         .load-more-btn {
@@ -340,6 +342,57 @@
         }
 
 
+        /* Active Users */
+        #active-users-container {
+            position: absolute;
+            top: 15px;
+            right: 20px;
+            display: flex;
+            flex-direction: row-reverse; /* Avatars stack left */
+            z-index: 10;
+        }
+        .active-user-avatar {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            border: 2px solid var(--background-primary);
+            box-shadow: 0 1px 4px rgba(0,0,0,0.2);
+            margin-left: -10px; /* Overlap effect */
+            transition: transform 0.2s ease;
+        }
+        .active-user-avatar:hover {
+            transform: scale(1.1);
+        }
+
+        /* Typing Indicator */
+        #typing-indicator-wrapper {
+            height: 24px;
+            flex-shrink: 0;
+            padding: 0 5px;
+            display: flex;
+            align-items: center;
+        }
+        #typing-indicator {
+            color: var(--text-muted);
+            font-size: 0.85rem;
+            font-style: italic;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .typing-dot {
+            animation: typing-blink 1.4s infinite both;
+            display: inline-block;
+        }
+        .typing-dot:nth-child(2) { animation-delay: 0.2s; }
+        .typing-dot:nth-child(3) { animation-delay: 0.4s; }
+        @keyframes typing-blink {
+            0% { opacity: .2; }
+            20% { opacity: 1; }
+            100% { opacity: .2; }
+        }
+
+
         /* Voice Collection Tab */
         #voices-tab {
             background-color: var(--background-primary);
@@ -456,10 +509,14 @@
         </div>
 
         <div class="main-content">
+            <div id="active-users-container"></div>
             <!-- Chat Tab -->
             <div id="chat-tab" class="tab-content active">
                 <div class="chat-log-container" id="chatLogContainer">
                      <div id="messages-wrapper"></div>
+                     <div id="typing-indicator-wrapper">
+                         <div id="typing-indicator"></div>
+                     </div>
                      <button id="load-more-btn" class="load-more-btn" style="display: none;">Load More Messages</button>
                 </div>
                 <div class="chat-input-area">
@@ -668,6 +725,7 @@
         const PAGE_SIZE = 20;
         let displayedMessageCount = PAGE_SIZE;
         let lastMessageIds = new Set();
+        let typingTimeout = null;
 
         function switchTab(tabName, button) {
             document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
@@ -914,6 +972,10 @@
 
             generateBtn.disabled = true;
             generateBtn.innerHTML = '<div class="spinner"></div>';
+            
+            // Stop broadcasting "typing" status
+            if (typingTimeout) clearTimeout(typingTimeout);
+            room.updatePresence({ isTyping: false });
 
             try {
                 const voiceUrl = await uploadAudioFile(selectedVoiceForTTS.file);
@@ -986,11 +1048,12 @@
             const wrapper = document.getElementById('messages-wrapper');
             const loadMoreBtn = document.getElementById('load-more-btn');
             
-            // With column-reverse, "bottom" is scrollTop 0.
-            const isScrolledToBottom = container.scrollTop < 5;
+            // With column-reverse and margin-top: auto on wrapper, this is more complex.
+            // Let's simplify: Scroll to bottom means scrollTop is close to scrollHeight.
+            const isScrolledToBottom = container.scrollHeight - container.clientHeight <= container.scrollTop + 20;
             const oldScrollHeight = container.scrollHeight;
 
-            const messagesToRender = allMessages.slice(-displayedMessageCount);
+            const messagesToRender = allMessages.slice().sort((a,b) => a.createdAt - b.createdAt).slice(-displayedMessageCount);
 
             if (messagesToRender.length === 0) {
                 wrapper.innerHTML = '<p style="text-align: center; color: var(--text-muted);">No messages yet. Be the first to say something!</p>';
@@ -1023,7 +1086,7 @@
             }
 
             if (isScrolledToBottom) {
-                container.scrollTop = 0;
+                container.scrollTop = container.scrollHeight;
             } else if (container.scrollHeight > oldScrollHeight) {
                 // Keep scroll position when loading more messages at the top
                  container.scrollTop += (container.scrollHeight - oldScrollHeight);
@@ -1048,6 +1111,17 @@
                     sendChatMessage();
                 }
             });
+            // Typing indicator logic
+            ttsTextarea.addEventListener('input', () => {
+                if (typingTimeout) clearTimeout(typingTimeout);
+                else room.updatePresence({ isTyping: true }); // Send initial typing event immediately
+                
+                typingTimeout = setTimeout(() => {
+                    room.updatePresence({ isTyping: false });
+                    typingTimeout = null;
+                }, 2000); // Stop typing after 2 seconds of inactivity
+            });
+
             document.getElementById('load-more-btn').addEventListener('click', handleLoadMore);
 
             populateVoiceDropdown();
@@ -1058,7 +1132,11 @@
             lastMessageIds = new Set(Object.keys(initialMessages));
             allMessages = Object.values(initialMessages).sort((a, b) => a.createdAt - b.createdAt);
             renderChatLog();
-            document.getElementById('chatLogContainer').scrollTop = 0;
+            document.getElementById('chatLogContainer').scrollTop = document.getElementById('chatLogContainer').scrollHeight;
+            
+            // Initial render of presence-based UI
+            renderActiveUsers();
+            renderTypingIndicator();
 
 
             room.subscribeRoomState(() => {
@@ -1080,7 +1158,49 @@
                 allMessages = Object.values(messages).sort((a, b) => a.createdAt - b.createdAt);
                 renderChatLog();
             });
+
+            room.subscribePresence(() => {
+                renderActiveUsers();
+                renderTypingIndicator();
+            });
         }
+
+        function renderActiveUsers() {
+            const container = document.getElementById('active-users-container');
+            const userIds = Object.keys(room.presence);
+            
+            container.innerHTML = userIds.map(id => {
+                const peer = room.peers[id];
+                if (!peer) return '';
+                return `<img src="${peer.avatarUrl}" class="active-user-avatar" title="${peer.username}">`;
+            }).join('');
+        }
+
+        function renderTypingIndicator() {
+            const indicator = document.getElementById('typing-indicator');
+            const typingUsers = Object.entries(room.presence)
+                .filter(([id, data]) => data.isTyping && id !== room.clientId)
+                .map(([id]) => room.peers[id]?.username)
+                .filter(Boolean); // Filter out any undefined usernames
+
+            if (typingUsers.length === 0) {
+                indicator.innerHTML = '';
+                return;
+            }
+
+            const dots = `<span class="typing-dot">.</span><span class="typing-dot">.</span><span class="typing-dot">.</span>`;
+
+            if (typingUsers.length > 5) {
+                indicator.innerHTML = `A lot of people are typing${dots}`;
+            } else if (typingUsers.length === 1) {
+                indicator.innerHTML = `<strong>${typingUsers[0]}</strong> is typing${dots}`;
+            } else {
+                const lastUser = typingUsers.pop();
+                const userList = typingUsers.join(', ');
+                indicator.innerHTML = `<strong>${userList}</strong> and <strong>${lastUser}</strong> are typing${dots}`;
+            }
+        }
+
 
         main();
     </script>
