@@ -1,0 +1,974 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Actor Voice Chat Room</title>
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            margin: 0;
+            padding: 20px;
+            min-height: 100vh;
+            color: white;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            width: 100%;
+            flex-grow: 1;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        h1, h2 {
+            text-align: center;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+
+        h1 {
+            font-size: 3rem;
+            margin-bottom: 40px;
+        }
+
+        h2 {
+            font-size: 2.5rem;
+            margin-bottom: 30px;
+        }
+
+        /* Tab Navigation Styles */
+        .tab-navigation {
+            display: flex;
+            justify-content: center;
+            margin-bottom: 40px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 15px;
+            padding: 5px;
+            backdrop-filter: blur(10px);
+        }
+
+        .tab-button {
+            flex: 1;
+            max-width: 200px;
+            padding: 15px 20px;
+            background: transparent;
+            border: none;
+            color: rgba(255, 255, 255, 0.7);
+            cursor: pointer;
+            border-radius: 10px;
+            font-size: 1.1rem;
+            font-weight: bold;
+            transition: all 0.3s ease;
+        }
+
+        .tab-button.active {
+            background: rgba(255, 255, 255, 0.2);
+            color: white;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+        }
+
+        .tab-button:hover:not(.active) {
+            background: rgba(255, 255, 255, 0.1);
+            color: rgba(255, 255, 255, 0.9);
+        }
+
+        /* Tab Content Styles */
+        .tab-content {
+            display: none;
+            flex-grow: 1;
+            flex-direction: column;
+        }
+
+        .tab-content.active {
+            display: flex;
+        }
+
+        /* TTS/Chat Tab Styles */
+        .chat-container {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 0 20px;
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            flex-grow: 1;
+        }
+
+        .chat-controls-container {
+            margin-top: auto;
+            padding-top: 20px;
+            background: linear-gradient(to top, rgba(118, 75, 162, 1) 0%, rgba(102, 126, 234, 0) 100%);
+        }
+
+        .voice-selector-container {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 30px;
+            align-items: flex-end;
+        }
+
+        .voice-dropdown-container {
+            flex: 1;
+        }
+
+        .voice-dropdown-label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: bold;
+            color: #ffd700;
+        }
+
+        #voice-dropdown {
+            width: 100%;
+            padding: 12px 15px;
+            border-radius: 10px;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            background: rgba(255, 255, 255, 0.1);
+            color: white;
+            font-size: 1rem;
+            backdrop-filter: blur(10px);
+        }
+
+        #voice-dropdown option {
+            background: #4a5568;
+            color: white;
+        }
+
+        #random-voice-btn {
+            background: linear-gradient(45deg, #ff6b6b, #ee5a24);
+            border: none;
+            border-radius: 10px;
+            padding: 12px 20px;
+            color: white;
+            font-weight: bold;
+            cursor: pointer;
+            font-size: 1rem;
+            transition: all 0.3s ease;
+        }
+
+        #random-voice-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(255, 107, 107, 0.4);
+        }
+
+        .selected-voice-preview {
+            background: rgba(0, 0, 0, 0.2);
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .preview-title {
+            color: #ffd700;
+            font-weight: bold;
+            font-size: 1.2rem;
+            margin-bottom: 10px;
+        }
+
+        .preview-script {
+            font-style: italic;
+            opacity: 0.9;
+            margin-bottom: 15px;
+            line-height: 1.5;
+        }
+
+        .preview-controls {
+            display: flex;
+            gap: 10px;
+        }
+
+        .preview-play-btn {
+            background: linear-gradient(45deg, #2ecc71, #27ae60);
+            border: none;
+            border-radius: 20px;
+            padding: 8px 16px;
+            color: white;
+            font-weight: bold;
+            cursor: pointer;
+            font-size: 0.9rem;
+            transition: all 0.3s ease;
+        }
+
+        .preview-play-btn:hover {
+            transform: scale(1.05);
+        }
+        
+        .voices-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+            gap: 25px;
+            margin-bottom: 60px;
+        }
+        
+        .voice-card {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 15px;
+            padding: 25px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.2);
+            border: 2px solid rgba(255, 255, 255, 0.2);
+            transition: transform 0.3s ease, box-shadow 0.3s ease, border-color 0.3s ease;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .voice-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 12px 40px rgba(0,0,0,0.3);
+        }
+
+        .voice-card.selected {
+            border-color: #ffd700;
+            box-shadow: 0 0 25px rgba(255, 215, 0, 0.5);
+        }
+        
+        .voice-title {
+            font-size: 1.5rem;
+            font-weight: bold;
+            margin-bottom: 15px;
+            color: #ffd700;
+        }
+        
+        .voice-script {
+            font-style: italic;
+            margin-bottom: 20px;
+            line-height: 1.6;
+            opacity: 0.9;
+            flex-grow: 1;
+        }
+        
+        .card-buttons {
+            display: flex;
+            gap: 10px;
+        }
+
+        .play-button, .use-tts-button {
+            border: none;
+            border-radius: 25px;
+            padding: 12px 0;
+            color: white;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            width: 100%;
+            font-size: 1rem;
+        }
+
+        .play-button {
+            background: linear-gradient(45deg, #ff6b6b, #ee5a24);
+        }
+        
+        .use-tts-button {
+            background: linear-gradient(45deg, #487fee, #3259a8);
+        }
+
+        .play-button:hover, .use-tts-button:hover {
+            transform: scale(1.05);
+        }
+        
+        .play-button:active, .use-tts-button:active {
+            transform: scale(0.98);
+        }
+        
+        .playing {
+            background: linear-gradient(45deg, #2ecc71, #27ae60) !important;
+        }
+        
+        .controls {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        
+        .control-button {
+            background: rgba(255, 255, 255, 0.2);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            border-radius: 20px;
+            padding: 10px 20px;
+            color: white;
+            cursor: pointer;
+            margin: 0 10px;
+            transition: all 0.3s ease;
+            font-size: 1rem;
+        }
+        
+        .control-button:hover {
+            background: rgba(255, 255, 255, 0.3);
+        }
+
+        #tts-text {
+            width: 100%;
+            min-height: 80px;
+            border-radius: 10px;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            background: rgba(255, 255, 255, 0.1);
+            padding: 15px;
+            color: white;
+            font-size: 1rem;
+            resize: vertical;
+            margin-bottom: 20px;
+        }
+
+        #tts-text::placeholder {
+            color: rgba(255, 255, 255, 0.6);
+        }
+
+        #send-chat-btn {
+             background: linear-gradient(45deg, #6366f1, #8b5cf6);
+             padding: 15px 30px;
+             border-radius: 25px;
+             font-size: 1.1rem;
+             font-weight: bold;
+        }
+        #send-chat-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(99, 102, 241, 0.4);
+        }
+
+        /* Chat Log / Gallery Styles */
+        .chat-log-container {
+            flex-grow: 1;
+            overflow-y: auto;
+            padding-right: 15px; /* for scrollbar */
+            margin-bottom: 20px;
+        }
+
+        .chat-message {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 15px;
+            padding: 25px;
+            margin-bottom: 20px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            transition: transform 0.2s ease;
+        }
+
+        .chat-message:hover {
+            transform: translateY(-2px);
+        }
+
+        .chat-header {
+            display: flex;
+            align-items: center;
+            margin-bottom: 15px;
+            gap: 15px;
+        }
+
+        .user-avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+        }
+
+        .chat-info {
+            flex-grow: 1;
+        }
+
+        .username {
+            font-weight: bold;
+            color: #ffd700;
+            font-size: 1.1rem;
+        }
+
+        .voice-type {
+            color: rgba(255, 255, 255, 0.8);
+            font-size: 0.9rem;
+        }
+
+        .timestamp {
+            color: rgba(255, 255, 255, 0.6);
+            font-size: 0.8rem;
+        }
+
+        .chat-text {
+            font-style: italic;
+            margin-bottom: 15px;
+            line-height: 1.5;
+            padding: 10px 15px;
+            background: rgba(0, 0, 0, 0.1);
+            border-radius: 8px;
+            border-left: 3px solid #ffd700;
+        }
+
+        .chat-audio {
+            width: 100%;
+            height: 40px;
+        }
+
+        /* Loading Spinner */
+        .spinner {
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            border-top: 2px solid white;
+            width: 18px;
+            height: 18px;
+            animation: spin 1s linear infinite;
+            display: inline-block;
+            margin-left: 10px;
+            vertical-align: middle;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎭 Actor Voice Chat Room</h1>
+        
+        <!-- Tab Navigation -->
+        <div class="tab-navigation">
+            <button class="tab-button active" onclick="switchTab('chat')">💬 Chat Room</button>
+            <button class="tab-button" onclick="switchTab('voices')">🎭 Voice Collection</button>
+        </div>
+
+        <!-- Chat Tab -->
+        <div id="chat-tab" class="tab-content active">
+            <div class="chat-container">
+                <h2>💬 Chat Log</h2>
+                <div class="chat-log-container" id="chatLogContainer">
+                    <!-- Chat messages will appear here -->
+                </div>
+                <div class="chat-controls-container">
+                    <div class="voice-selector-container">
+                        <div class="voice-dropdown-container">
+                            <label for="voice-dropdown" class="voice-dropdown-label">Select Voice:</label>
+                            <select id="voice-dropdown" onchange="selectVoiceFromDropdown()">
+                                <option value="">Choose a voice...</option>
+                            </select>
+                        </div>
+                        <button id="random-voice-btn" onclick="selectRandomVoice()">🎲 Random</button>
+                    </div>
+
+                    <div id="selected-voice-preview" class="selected-voice-preview" style="display: none;">
+                        <div class="preview-title" id="preview-title"></div>
+                        <div class="preview-controls">
+                            <button class="preview-play-btn" id="preview-play-btn" onclick="playPreview()">▶ Preview</button>
+                        </div>
+                    </div>
+
+                    <textarea id="tts-text" placeholder="Select a voice, type a message, and press Enter to send..."></textarea>
+                    <div style="text-align: center;">
+                        <button id="send-chat-btn" class="control-button">Send</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Voices Tab -->
+        <div id="voices-tab" class="tab-content">
+            <h2>🎭 Voice Collection</h2>
+            <div class="controls">
+                <button class="control-button" onclick="stopAll()">Stop All</button>
+                <button class="control-button" onclick="playRandomFromCollection()">Play Random</button>
+            </div>
+            <div class="voices-grid" id="voicesGrid">
+                <!-- Voice cards will be generated by JavaScript -->
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const voices = [
+            {
+                title: "Shakespearean Actor",
+                script: "To be or not to be, that is the question! Whether 'tis nobler in the mind to suffer the slings and arrows of outrageous fortune...",
+                file: "shakespearean_actor.mp3"
+            },
+            {
+                title: "Action Hero",
+                script: "I'll be back. And when I return, there's gonna be hell to pay. Nobody messes with my family and gets away with it!",
+                file: "action_hero.mp3"
+            },
+            {
+                title: "Mysterious Narrator",
+                script: "In the shadows of the night, where secrets whisper and truth hides... one man will discover that reality is far stranger than fiction.",
+                file: "mysterious_narrator.mp3"
+            },
+            {
+                title: "Comedy Character",
+                script: "Well, that's just fantastic! Another brilliant plan gone completely sideways. What could possibly go wrong next? Don't answer that!",
+                file: "comedy_character.mp3"
+            },
+            {
+                title: "Sinister Villain",
+                script: "You fools think you can stop me? I've been planning this for years... and now, finally, my moment of triumph has arrived!",
+                file: "sinister_villain.mp3"
+            },
+            {
+                title: "News Anchor",
+                script: "Good evening, I'm reporting live from downtown where breaking news continues to unfold. We'll have more updates as this story develops.",
+                file: "news_anchor.mp3"
+            },
+            {
+                title: "Southern Gentleman",
+                script: "Well, I do declare! That's the finest hospitality I've encountered in all my years. Y'all sure know how to treat a gentleman right proper.",
+                file: "southern_gentleman.mp3"
+            },
+            {
+                title: "British Aristocrat",
+                script: "I say, old chap, that simply won't do at all! One must maintain proper standards, don't you know. Quite improper, really.",
+                file: "british_aristocrat.mp3"
+            },
+            {
+                title: "Sci-Fi Robot",
+                script: "System analysis complete. Human behavior patterns remain... illogical. Recalibrating social interaction protocols for optimal efficiency.",
+                file: "scifi_robot.mp3"
+            },
+            {
+                title: "Fantasy Wizard",
+                script: "By the ancient powers that flow through these mystical realms, I summon thee! The magic of ages past shall guide us to victory!",
+                file: "fantasy_wizard.mp3"
+            },
+            {
+                title: "Drill Sergeant",
+                script: "Listen up, maggots! You will give me one hundred percent, or I will personally see to it that you regret the day you were born! Drop and give me twenty! Now! Move, move, move!",
+                file: "drill_sergeant.mp3"
+            },
+            {
+                title: "Pirate Captain",
+                script: "Yarrr, me hearties! Hoist the colors and ready the cannons! There be treasure on the horizon, and ol' Captain Blackheart aims to claim it! The sea be a cruel mistress, but she rewards the bold!",
+                file: "pirate_captain.mp3"
+            },
+            {
+                title: "Hard-boiled Detective",
+                script: "The city was a rain-soaked chessboard, and I was just another pawn. She walked into my office like a dame from a dime-store novel, trouble written all over her in lipstick red. This case smelled fishier than a cannery on a hot day.",
+                file: "hardboiled_detective.mp3"
+            },
+            {
+                title: "Meditation Guide",
+                script: "Breathe in deeply... and now, exhale, releasing all tension. Feel the weight of the world lift from your shoulders. You are here, in this moment. Peaceful. Calm. Centered.",
+                file: "meditation_guide.mp3"
+            },
+            {
+                title: "Game Show Host",
+                script: "Welcome back, folks! Our next contestant is just one question away from winning the grand prize! A brand new car! A trip for two to Hawaii! And a lifetime supply of cheese! Are you ready to play... The Price is... RIGHTEOUS`?",
+                file: "gameshow_host.mp3"
+            },
+            {
+                title: "Valley Girl",
+                script: "Oh my god, like, seriously? That is, like, so fetch. I can't even. Let's totally go to the mall later, for sure!",
+                file: "valley_girl.mp3"
+            },
+            {
+                title: "Surfer Dude",
+                script: "Whoa, righteous wave, brah! You just gotta, like, go with the flow, you know? Everything's totally tubular. Stay stoked!",
+                file: "surfer_dude.mp3"
+            },
+            {
+                title: "Excited Child",
+                script: "Wow! A real spaceship! Is that for me? It's the best present ever! Can we fly it to the moon? Please, please, please!",
+                file: "excited_child.mp3"
+            },
+            {
+                title: "Tired Parent",
+                script: "Did you brush your teeth? Is your homework done? Please just... just go to bed. I'll count to three... one... two... don't make me get to three...",
+                file: "tired_parent.mp3"
+            },
+            {
+                title: "Gossip Columnist",
+                script: "Listeners, you simply won't believe the scandal I've just uncovered. It seems our beloved city mayor has a secret that's about to rock this town to its core. Stay tuned, darlings, the drama is just beginning!",
+                file: "gossip_columnist.mp3"
+            },
+            {
+                title: "Femme Fatale",
+                script: "He was tall, dark, and handsome... a real sucker. I knew I had him wrapped around my little finger the moment he walked into that smokey dive. He thought he was saving a damsel in distress... little did he know, he was the one who needed saving.",
+                file: "femme_fatale.mp3"
+            },
+            {
+                title: "Cowboy",
+                script: "Well now, hold on a minute, partner. This here town ain't big enough for the two of us. You best be on your way before the sun sets... or you'll be pushin' up daisies.",
+                file: "cowboy.mp3"
+            },
+            {
+                title: "Auctioneer",
+                script: "I've got five dollars, now ten, now ten, will ya give me ten? Ten dollar bid, now fifteen, now fifteen, will ya give me fifteen? Sold for fifteen dollars to the gentleman in the back! Let's move on to the next lot, folks, no time to waste!",
+                file: "auctioneer.mp3"
+            },
+            {
+                title: "Old Timey Radio Announcer",
+                script: "And now, a word from our sponsor, Acme Soap! For a brighter, cleaner tomorrow, remember to ask for Acme! That's A-C-M-E! And we'll be right back with more thrilling adventures of Captain Comet after these messages!",
+                file: "old_timey_radio.mp3"
+            },
+            {
+                title: "Mad Scientist",
+                script: "It's alive! It's ALIVE! My creation is complete! With this formula, I shall rule the world! They all called me mad, but I'll show them! I'll show them all! Bwahahaha!",
+                file: "mad_scientist.mp3"
+            },
+            {
+                title: "Aussie Adventurer",
+                script: "Crikey, mate! Look at this little beauty! She's a bit feisty, but what a magnificent creature! Just gotta be careful not to get too close, or she'll have ya for brekkie! What a ripper!",
+                file: "aussie_adventurer.mp3"
+            },
+            {
+                title: "Anime Hero",
+                script: "This is the power of our friendship! I won't let you hurt anyone else! Take this! Ultimate Dragon Fury Blast! Haaaaa!",
+                file: "anime_hero.mp3"
+            },
+            {
+                title: "Documentary Narrator",
+                script: "Here, in the vast expanse of the savanna, the pride rests. The sun beats down, and patience is a virtue. For the hunt will soon begin, a timeless dance between predator and prey.",
+                file: "documentary_narrator.mp3"
+            },
+            {
+                title: "Sportscaster",
+                script: "He's at the 20, the 10, he dodges a tackle! He's going all the way! Touchdown! Unbelievable! The crowd is going wild! I don't believe what I've just seen! What a finish!",
+                file: "sportscaster.mp3"
+            },
+            {
+                title: "Fairy Godmother",
+                script: "Now, now, my dear, don't you worry your pretty little head. With a bibbidi-bobbidi-boo and a wave of my wand, you'll be the belle of the ball! Just be sure to be home by midnight!",
+                file: "fairy_godmother.mp3"
+            }
+        ];
+
+        const room = new WebsimSocket();
+
+        let currentAudio = null;
+        let currentButton = null;
+        let selectedVoiceForTTS = null;
+        let uploadedVoiceUrls = {}; // Cache for uploaded URLs
+        let previewAudio = null;
+
+        // Audio queue for chat messages
+        const audioQueue = [];
+        let isAudioPlaying = false;
+        let queueAudioPlayer;
+
+        // Tab switching functionality
+        function switchTab(tabName) {
+            document.querySelectorAll('.tab-content').forEach(content => {
+                content.classList.remove('active');
+            });
+            document.querySelectorAll('.tab-button').forEach(button => {
+                button.classList.remove('active');
+            });
+            document.getElementById(tabName + '-tab').classList.add('active');
+            event.target.classList.add('active');
+        }
+
+        // Populate voice dropdown
+        function populateVoiceDropdown() {
+            const dropdown = document.getElementById('voice-dropdown');
+            voices.forEach((voice, index) => {
+                const option = document.createElement('option');
+                option.value = index;
+                option.textContent = voice.title;
+                dropdown.appendChild(option);
+            });
+        }
+
+        // Select voice from dropdown
+        function selectVoiceFromDropdown() {
+            const dropdown = document.getElementById('voice-dropdown');
+            const selectedIndex = dropdown.value;
+            
+            if (selectedIndex === '') {
+                hideVoicePreview();
+                if (previewAudio) {
+                    previewAudio.pause();
+                    previewAudio = null;
+                }
+                document.getElementById('preview-play-btn').textContent = '▶ Preview';
+                return;
+            }
+            
+            selectVoiceForTTS(parseInt(selectedIndex));
+        }
+
+        function selectRandomVoice() {
+            const randomIndex = Math.floor(Math.random() * voices.length);
+            document.getElementById('voice-dropdown').value = randomIndex;
+            selectVoiceForTTS(randomIndex);
+        }
+
+        function selectVoiceForTTS(index) {
+            const voice = voices[index];
+            selectedVoiceForTTS = { file: voice.file, title: voice.title, script: voice.script };
+
+            if (previewAudio) {
+                previewAudio.pause();
+                previewAudio = null;
+            }
+            document.getElementById('preview-play-btn').textContent = '▶ Preview';
+            
+            showVoicePreview(voice);
+        }
+
+        function showVoicePreview(voice) {
+            const preview = document.getElementById('selected-voice-preview');
+            document.getElementById('preview-title').textContent = voice.title;
+            preview.style.display = 'block';
+        }
+
+        function hideVoicePreview() {
+            document.getElementById('selected-voice-preview').style.display = 'none';
+            selectedVoiceForTTS = null;
+        }
+
+        function playPreview() {
+            if (!selectedVoiceForTTS) return;
+            
+            const button = document.getElementById('preview-play-btn');
+
+            if (!previewAudio) {
+                previewAudio = new Audio(selectedVoiceForTTS.file);
+                previewAudio.onended = function() {
+                    button.textContent = '▶ Preview';
+                    button.classList.remove('playing');
+                };
+            }
+
+            if (previewAudio.paused) {
+                previewAudio.play();
+                button.textContent = '⏸️ Pause';
+                button.classList.add('playing');
+            } else {
+                previewAudio.pause();
+                button.textContent = '▶ Preview';
+                button.classList.remove('playing');
+            }
+        }
+
+        async function uploadAudioFile(filename) {
+            if (uploadedVoiceUrls[filename]) {
+                return uploadedVoiceUrls[filename];
+            }
+            try {
+                const response = await fetch(filename);
+                const blob = await response.blob();
+                const file = new File([blob], filename, { type: blob.type });
+                const url = await websim.upload(file);
+                uploadedVoiceUrls[filename] = url;
+                return url;
+            } catch (error) {
+                console.error('Error uploading audio file:', error);
+                throw error;
+            }
+        }
+
+        function createVoiceCard(voice, index) {
+            return `
+                <div class="voice-card" id="voice-card-${index}">
+                    <div class="voice-title">${voice.title}</div>
+                    <div class="voice-script">"${voice.script}"</div>
+                    <div class="card-buttons">
+                        <button class="play-button" onclick="playVoice('${voice.file}', this)">
+                            ▶ Play
+                        </button>
+                        <button class="use-tts-button" onclick="selectForTTSFromCard(${index})">
+                            🎙️ Use for TTS
+                        </button>
+                    </div>
+                </div>
+            `;
+        }
+
+        function playVoice(filename, button) {
+            if (currentAudio) {
+                currentAudio.pause();
+                currentAudio.currentTime = 0;
+                if (currentButton) {
+                    currentButton.classList.remove('playing');
+                    currentButton.innerHTML = '▶ Play';
+                }
+            }
+
+            if (currentButton === button) {
+                currentAudio = null;
+                currentButton = null;
+                return;
+            }
+
+            currentAudio = new Audio(filename);
+            currentButton = button;
+            button.classList.add('playing');
+            button.innerHTML = '⏸️ Playing...';
+            currentAudio.play();
+            currentAudio.onended = function() {
+                button.classList.remove('playing');
+                button.innerHTML = '▶ Play';
+                currentAudio = null;
+                currentButton = null;
+            };
+        }
+
+        function stopAll() {
+            if (currentAudio) {
+                currentAudio.pause();
+                currentAudio.currentTime = 0;
+                if (currentButton) {
+                    currentButton.classList.remove('playing');
+                    currentButton.innerHTML = '▶ Play';
+                }
+                currentAudio = null;
+                currentButton = null;
+            }
+        }
+
+        function playRandomFromCollection() {
+            stopAll();
+            const randomIndex = Math.floor(Math.random() * voices.length);
+            const buttons = document.querySelectorAll('.play-button');
+            playVoice(voices[randomIndex].file, buttons[randomIndex]);
+        }
+
+        function selectForTTSFromCard(index) {
+            switchTab('chat');
+            document.getElementById('voice-dropdown').value = index;
+            selectVoiceForTTS(index);
+            document.querySelectorAll('.voice-card').forEach(card => card.classList.remove('selected'));
+            document.getElementById(`voice-card-${index}`).classList.add('selected');
+        }
+
+        async function sendChatMessage() {
+            const text = document.getElementById('tts-text').value.trim();
+            const generateBtn = document.getElementById('send-chat-btn');
+
+            if (!selectedVoiceForTTS) {
+                alert('Please select a voice first.');
+                return;
+            }
+            if (!text) {
+                alert('Please enter a message.');
+                return;
+            }
+
+            generateBtn.disabled = true;
+            generateBtn.innerHTML = 'Sending... <div class="spinner"></div>';
+
+            try {
+                const voiceUrl = await uploadAudioFile(selectedVoiceForTTS.file);
+                const result = await websim.textToSpeech({
+                    text: text,
+                    voice_sample: voiceUrl
+                });
+
+                // Add to own queue
+                addToQueue(result.url);
+                
+                // Broadcast for others to play
+                room.send({
+                    type: 'chat_message',
+                    audio_url: result.url,
+                    echo: false // Don't send back to self
+                });
+
+                // Save to persistent collection, which triggers UI update for everyone
+                await room.collection('generated_voice').create({
+                    text: text,
+                    voice_type: selectedVoiceForTTS.title,
+                    audio_url: result.url,
+                    voice_sample_file: selectedVoiceForTTS.file
+                });
+                
+                document.getElementById('tts-text').value = '';
+
+            } catch (error) {
+                console.error('TTS Generation Error:', error);
+                alert('Sorry, there was an error sending the message. Please try again.');
+            } finally {
+                generateBtn.disabled = false;
+                generateBtn.innerHTML = 'Send';
+            }
+        }
+
+        function playNextInQueue() {
+            if (isAudioPlaying || audioQueue.length === 0) {
+                return;
+            }
+            isAudioPlaying = true;
+            const audioUrl = audioQueue.shift();
+            
+            if (!queueAudioPlayer) {
+                queueAudioPlayer = new Audio();
+                queueAudioPlayer.addEventListener('ended', () => {
+                    isAudioPlaying = false;
+                    playNextInQueue();
+                });
+                queueAudioPlayer.addEventListener('error', (e) => {
+                    console.error("Error playing audio from queue:", e);
+                    isAudioPlaying = false;
+                    playNextInQueue();
+                });
+            }
+            
+            queueAudioPlayer.src = audioUrl;
+            queueAudioPlayer.play().catch(e => {
+                console.error("Playback failed:", e);
+                isAudioPlaying = false;
+                playNextInQueue();
+            });
+        }
+
+        function addToQueue(url) {
+            audioQueue.push(url);
+            playNextInQueue();
+        }
+
+        function renderChatLog(voices) {
+            const container = document.getElementById('chatLogContainer');
+            if (voices.length === 0) {
+                container.innerHTML = '<p style="text-align: center; opacity: 0.7;">No messages yet. Be the first to say something!</p>';
+                return;
+            }
+
+            container.innerHTML = voices.slice().reverse().map(voice => `
+                <div class="chat-message">
+                    <div class="chat-header">
+                        <img src="https://images.websim.com/avatar/${voice.username}" alt="${voice.username}" class="user-avatar">
+                        <div class="chat-info">
+                            <div class="username">@${voice.username}</div>
+                            <div class="voice-type">${voice.voice_type}</div>
+                            <div class="timestamp">${new Date(voice.created_at).toLocaleString()}</div>
+                        </div>
+                    </div>
+                    <div class="chat-text">"${voice.text}"</div>
+                    <audio controls class="chat-audio">
+                        <source src="${voice.audio_url}" type="audio/wav">
+                    </audio>
+                </div>
+            `).join('');
+            container.scrollTop = container.scrollHeight;
+        }
+
+        async function main() {
+            await room.initialize();
+            
+            // Event Listeners
+            document.getElementById('send-chat-btn').addEventListener('click', sendChatMessage);
+            document.getElementById('tts-text').addEventListener('keydown', (event) => {
+                if (event.key === 'Enter' && !event.shiftKey) {
+                    event.preventDefault();
+                    sendChatMessage();
+                }
+            });
+
+            // Initialize the page
+            populateVoiceDropdown();
+            document.getElementById('voicesGrid').innerHTML = voices.map(createVoiceCard).join('');
+            
+            // Handle incoming realtime messages
+            room.onmessage = (event) => {
+                const data = event.data;
+                if (data.type === 'chat_message' && data.audio_url) {
+                    addToQueue(data.audio_url);
+                }
+            };
+            
+            // Subscribe to gallery updates for the visual chat log
+            room.collection('generated_voice').subscribe(renderChatLog);
+        }
+
+        main();
+    </script>
+<script defer src="https://static.cloudflareinsights.com/beacon.min.js/v8c78df7c7c0f484497ecbca7046644da1771523124516" integrity="sha512-8DS7rgIrAmghBFwoOTujcf6D9rXvH8xm8JQ1Ja01h9QX8EzXldiszufYa4IFfKdLUKTTrnSFXLDkUEOTrZQ8Qg==" data-cf-beacon='{"version":"2024.11.0","token":"4c6229722a6346bc8eb5cb0e5eae5d41","server_timing":{"name":{"cfCacheStatus":true,"cfEdge":true,"cfExtPri":true,"cfL4":true,"cfOrigin":true,"cfSpeedBrain":true},"location_startswith":null}}' crossorigin="anonymous"></script>
+</body>
+</html>
