@@ -143,7 +143,7 @@
         #tts-text {
             flex-grow: 1;
             width: 100%;
-            min-height: 44px;
+            min-height: 68px;
             max-height: 200px;
             border-radius: 8px;
             border: none;
@@ -218,6 +218,8 @@
             width: 100%;
             margin: 0;
             height: 44px;
+            flex-shrink: 0;
+            margin: 0;
         }
 
         #selected-voice-preview {
@@ -434,7 +436,11 @@
                      <button id="load-more-btn" class="load-more-btn" style="display: none;">Load More Messages</button>
                 </div>
                 <div class="chat-input-area">
-                    <textarea id="tts-text" placeholder="Type a message..." rows="1"></textarea>
+                    <div id="selected-voice-preview" style="display: none;">
+                        <span class="preview-title" id="preview-title"></span>
+                        <button class="preview-play-btn" id="preview-play-btn" onclick="playPreview()">▶</button>
+                    </div>
+                    <textarea id="tts-text" placeholder="Type a message..." rows="2"></textarea>
                     <div class="right-controls">
                          <div class="voice-selector-container">
                             <div class="voice-dropdown-container">
@@ -446,10 +452,6 @@
                             <button id="random-voice-btn" onclick="selectRandomVoice()" title="Select Random Voice">🎲</button>
                         </div>
     
-                        <div id="selected-voice-preview" style="display: none;">
-                            <span class="preview-title" id="preview-title"></span>
-                            <button class="preview-play-btn" id="preview-play-btn" onclick="playPreview()">▶</button>
-                        </div>
                         <button id="send-chat-btn">Send</button>
                     </div>
                 </div>
