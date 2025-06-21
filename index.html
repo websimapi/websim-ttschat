@@ -127,12 +127,20 @@
 
         .chat-input-area {
             flex-shrink: 0;
-            padding: 20px;
+            padding: 10px 20px 20px 20px;
             background-color: var(--background-primary);
-            margin: 0 20px;
+            display: flex;
+            flex-direction: column;
         }
 
+        .input-controls-wrapper {
+            display: flex;
+            align-items: flex-start;
+            gap: 10px;
+        }
+        
         #tts-text {
+            flex-grow: 1;
             width: 100%;
             min-height: 44px;
             max-height: 200px;
@@ -143,26 +151,31 @@
             color: var(--text-normal);
             font-size: 1rem;
             resize: vertical;
-            margin-top: 15px;
+            margin: 0;
         }
+
+        .right-controls {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            width: 180px;
+            flex-shrink: 0;
+        }
+
         #tts-text::placeholder {
             color: var(--text-muted);
         }
 
         .voice-selector-container {
             display: flex;
-            gap: 15px;
-            align-items: flex-end;
+            gap: 8px;
+            align-items: center;
         }
         .voice-dropdown-container {
             flex: 1;
         }
         .voice-dropdown-label {
-            display: block;
-            margin-bottom: 8px;
-            font-weight: bold;
-            color: var(--header-secondary);
-            font-size: 0.9rem;
+            display: none;
         }
 
         #voice-dropdown {
@@ -172,7 +185,7 @@
             border: 1px solid var(--background-tertiary);
             background: var(--background-secondary);
             color: var(--text-normal);
-            font-size: 1rem;
+            font-size: 0.9rem;
         }
         #voice-dropdown option {
             background: var(--background-secondary);
@@ -189,38 +202,57 @@
             cursor: pointer;
             font-size: 1rem;
             transition: all 0.2s ease;
+            height: 38px;
+        }
+        #random-voice-btn {
+            font-size: 1.2rem;
+            padding: 0;
+            width: 38px;
+            line-height: 38px;
         }
         #random-voice-btn:hover, #send-chat-btn:hover {
             background: var(--brand-experiment-hover);
         }
         #send-chat-btn {
-            padding: 12px 20px;
+            padding: 0 15px;
             width: 100%;
-            margin-top: 10px;
+            margin: 0;
+            height: auto;
+            min-height: 44px;
         }
 
         #selected-voice-preview {
             background: rgba(0,0,0,0.1);
-            padding: 10px;
+            padding: 6px 10px;
             border-radius: 5px;
-            margin-top: 15px;
             border-left: 3px solid var(--yellow);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            height: 38px;
+            margin: 0;
         }
         .preview-title {
             color: var(--header-primary);
             font-weight: bold;
+            font-size: 0.9rem;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            padding-right: 5px;
         }
         .preview-play-btn {
             background: var(--brand-experiment);
             border: none;
             border-radius: 5px;
-            padding: 6px 12px;
+            padding: 4px 8px;
             color: white;
             font-weight: bold;
             cursor: pointer;
-            font-size: 0.9rem;
+            font-size: 0.8rem;
             transition: all 0.2s ease;
-            margin-top: 8px;
+            margin: 0;
+            flex-shrink: 0;
         }
         .preview-play-btn.playing {
             background: #43b581;
@@ -403,24 +435,26 @@
                      <button id="load-more-btn" class="load-more-btn" style="display: none;">Load More Messages</button>
                 </div>
                 <div class="chat-input-area">
-                     <div class="voice-selector-container">
-                        <div class="voice-dropdown-container">
-                            <label for="voice-dropdown" class="voice-dropdown-label">Select Voice:</label>
-                            <select id="voice-dropdown" onchange="selectVoiceFromDropdown()">
-                                <option value="">Choose a voice...</option>
-                            </select>
+                    <div class="right-controls">
+                         <div class="voice-selector-container">
+                            <div class="voice-dropdown-container">
+                                <label for="voice-dropdown" class="voice-dropdown-label">Select Voice:</label>
+                                <select id="voice-dropdown" onchange="selectVoiceFromDropdown()">
+                                    <option value="">Choose a voice...</option>
+                                </select>
+                            </div>
+                            <button id="random-voice-btn" onclick="selectRandomVoice()" title="Select Random Voice">🎲</button>
                         </div>
-                        <button id="random-voice-btn" onclick="selectRandomVoice()">🎲 Random</button>
-                    </div>
-
-                    <div id="selected-voice-preview" class="selected-voice-preview" style="display: none;">
-                        <div class="preview-title" id="preview-title"></div>
-                        <div class="preview-controls">
-                            <button class="preview-play-btn" id="preview-play-btn" onclick="playPreview()">▶ Preview</button>
+    
+                        <div id="selected-voice-preview" style="display: none;">
+                            <span class="preview-title" id="preview-title"></span>
+                            <button class="preview-play-btn" id="preview-play-btn" onclick="playPreview()">▶</button>
                         </div>
                     </div>
-                    <textarea id="tts-text" placeholder="Select a voice, type a message..."></textarea>
-                    <button id="send-chat-btn">Send Message</button>
+                    <div class="input-controls-wrapper">
+                        <textarea id="tts-text" placeholder="Type a message..."></textarea>
+                        <button id="send-chat-btn">Send</button>
+                    </div>
                 </div>
             </div>
 
@@ -648,6 +682,8 @@
             const randomIndex = Math.floor(Math.random() * voices.length);
             document.getElementById('voice-dropdown').value = randomIndex;
             selectVoiceForTTS(randomIndex);
+            // Close dropdown if on mobile after selection
+            document.getElementById('voice-dropdown').blur();
         }
 
         function selectVoiceForTTS(index) {
@@ -658,15 +694,15 @@
                 previewAudio.pause();
                 previewAudio = null;
             }
-            document.getElementById('preview-play-btn').textContent = '▶ Preview';
+            document.getElementById('preview-play-btn').textContent = '▶';
             
             showVoicePreview(voice);
         }
 
         function showVoicePreview(voice) {
             const preview = document.getElementById('selected-voice-preview');
-            document.getElementById('preview-title').textContent = `Voice: ${voice.title}`;
-            preview.style.display = 'block';
+            document.getElementById('preview-title').textContent = `${voice.title}`;
+            preview.style.display = 'flex';
         }
 
         function hideVoicePreview() {
@@ -680,7 +716,7 @@
 
             if (previewAudio && !previewAudio.paused) {
                 previewAudio.pause();
-                button.textContent = '▶ Preview';
+                button.textContent = '▶';
                 button.classList.remove('playing');
                 return;
             }
@@ -689,13 +725,13 @@
             if (!previewAudio || previewAudio.src !== new URL(selectedVoiceForTTS.file, window.location.href).href) {
                  previewAudio = new Audio(selectedVoiceForTTS.file);
                  previewAudio.onended = function() {
-                    button.textContent = '▶ Preview';
+                    button.textContent = '▶';
                     button.classList.remove('playing');
                 };
             }
 
             previewAudio.play();
-            button.textContent = '⏸️ Pause';
+            button.textContent = '⏸️';
             button.classList.add('playing');
         }
 
@@ -795,12 +831,11 @@
                 return;
             }
             if (!text) {
-                alert('Please enter a message.');
-                return;
+                return; // Don't alert for empty message, just don't send
             }
 
             generateBtn.disabled = true;
-            generateBtn.innerHTML = 'Sending... <div class="spinner"></div>';
+            generateBtn.innerHTML = '<div class="spinner"></div>';
 
             try {
                 const voiceUrl = await uploadAudioFile(selectedVoiceForTTS.file);
@@ -832,7 +867,7 @@
                 alert('Sorry, there was an error sending the message. Please try again.');
             } finally {
                 generateBtn.disabled = false;
-                generateBtn.innerHTML = 'Send Message';
+                generateBtn.innerHTML = 'Send';
             }
         }
 
