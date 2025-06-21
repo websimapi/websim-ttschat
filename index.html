@@ -306,6 +306,38 @@
             color: var(--text-muted);
             font-style: italic;
         }
+        .message-body {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-top: 4px;
+        }
+        .message-play-button {
+            background: var(--brand-experiment);
+            border: none;
+            border-radius: 50%;
+            color: white;
+            width: 32px;
+            height: 32px;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: background-color 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+        .message-play-button:hover {
+            background: var(--brand-experiment-hover);
+        }
+        .message-play-button.playing {
+            background: #43b581;
+        }
+        .voice-type-inline {
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            font-style: italic;
+        }
 
 
         /* Voice Collection Tab */
@@ -624,6 +656,8 @@
         let selectedVoiceForTTS = null;
         let uploadedVoiceUrls = {}; 
         let previewAudio = null;
+        let messageAudioPlayer = null;
+        let currentMessagePlayButton = null;
 
         const audioQueue = [];
         let isAudioPlaying = false;
@@ -736,6 +770,45 @@
             }
 
             previewAudio.play();
+            button.textContent = '⏸️';
+            button.classList.add('playing');
+        }
+
+        function playMessageAudio(url, button) {
+            // If clicking the currently playing button, pause it.
+            if (messageAudioPlayer && !messageAudioPlayer.paused && currentMessagePlayButton === button) {
+                messageAudioPlayer.pause();
+                return;
+            }
+
+            // Stop any other message that might be playing.
+            if (messageAudioPlayer) {
+                messageAudioPlayer.pause();
+            }
+
+            // If a new player is needed or the source is different.
+            if (!messageAudioPlayer || messageAudioPlayer.src !== new URL(url, window.location.href).href) {
+                messageAudioPlayer = new Audio(url);
+                messageAudioPlayer.onended = () => {
+                    if (currentMessagePlayButton) {
+                        currentMessagePlayButton.textContent = '▶';
+                        currentMessagePlayButton.classList.remove('playing');
+                    }
+                    currentMessagePlayButton = null;
+                };
+                messageAudioPlayer.onpause = () => {
+                    if (currentMessagePlayButton) {
+                        currentMessagePlayButton.textContent = '▶';
+                        currentMessagePlayButton.classList.remove('playing');
+                    }
+                };
+            }
+            
+            messageAudioPlayer.src = url;
+            messageAudioPlayer.play().catch(e => console.error("Error playing message audio:", e));
+            
+            // Set new button as current
+            currentMessagePlayButton = button;
             button.textContent = '⏸️';
             button.classList.add('playing');
         }
@@ -923,18 +996,21 @@
                 wrapper.innerHTML = '<p style="text-align: center; color: var(--text-muted);">No messages yet. Be the first to say something!</p>';
             } else {
                  wrapper.innerHTML = messagesToRender.map(msg => {
+                    // Sanitize text for the title attribute
+                    const sanitizedText = (msg.text || '').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
                     const peer = room.peers[msg.clientId] || { username: msg.username, avatarUrl: msg.avatarUrl };
                     return `
-                    <div class="chat-message" data-message-id="${msg.id}">
+                    <div class="chat-message" data-message-id="${msg.id}" title="${sanitizedText}">
                         <img src="${peer.avatarUrl}" alt="${peer.username}" class="user-avatar">
                         <div class="chat-content">
                             <div class="chat-header">
                                 <span class="username">${peer.username}</span>
                                 <span class="timestamp">${new Date(msg.createdAt).toLocaleString()}</span>
                             </div>
-                             <p class="chat-text">${msg.text}</p>
-                             <div class="voice-type">(${msg.voice_type})</div>
-                             <audio controls class="chat-audio" src="${msg.audio_url}"></audio>
+                            <div class="message-body">
+                                <button class="message-play-button" onclick="playMessageAudio('${msg.audio_url}', this)">▶</button>
+                                <span class="voice-type-inline">said with '${msg.voice_type}'</span>
+                            </div>
                         </div>
                     </div>
                 `}).join('');
