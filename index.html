@@ -100,11 +100,18 @@
             flex-grow: 1;
             overflow-y: auto;
             padding: 20px 20px 0 20px;
+            display: flex;
+            flex-direction: column-reverse;
         }
         
+        #messages-wrapper {
+            display: flex;
+            flex-direction: column;
+        }
+
         .load-more-btn {
             display: block;
-            margin: 0 auto 20px auto;
+            margin: 20px auto 0 auto;
             padding: 8px 16px;
             border: none;
             border-radius: 5px;
@@ -392,8 +399,8 @@
             <!-- Chat Tab -->
             <div id="chat-tab" class="tab-content active">
                 <div class="chat-log-container" id="chatLogContainer">
-                     <button id="load-more-btn" class="load-more-btn" style="display: none;">Load More Messages</button>
                      <div id="messages-wrapper"></div>
+                     <button id="load-more-btn" class="load-more-btn" style="display: none;">Load More Messages</button>
                 </div>
                 <div class="chat-input-area">
                      <div class="voice-selector-container">
@@ -866,8 +873,9 @@
             const wrapper = document.getElementById('messages-wrapper');
             const loadMoreBtn = document.getElementById('load-more-btn');
             
-            const isScrolledToBottom = container.scrollHeight - container.clientHeight <= container.scrollTop + 1;
-            const oldWrapperHeight = wrapper.scrollHeight;
+            // With column-reverse, "bottom" is scrollTop 0.
+            const isScrolledToBottom = container.scrollTop < 5;
+            const oldScrollHeight = container.scrollHeight;
 
             const messagesToRender = allMessages.slice(-displayedMessageCount);
 
@@ -899,10 +907,10 @@
             }
 
             if (isScrolledToBottom) {
-                container.scrollTop = container.scrollHeight;
-            } else if (messagesToRender.length > 0 && wrapper.scrollHeight > oldWrapperHeight) {
-                // Keep scroll position when loading more
-                container.scrollTop += (wrapper.scrollHeight - oldWrapperHeight);
+                container.scrollTop = 0;
+            } else if (container.scrollHeight > oldScrollHeight) {
+                // Keep scroll position when loading more messages at the top
+                 container.scrollTop += (container.scrollHeight - oldScrollHeight);
             }
         }
         
@@ -931,7 +939,7 @@
             lastMessageIds = new Set(Object.keys(initialMessages));
             allMessages = Object.values(initialMessages).sort((a, b) => a.createdAt - b.createdAt);
             renderChatLog();
-            document.getElementById('chatLogContainer').scrollTop = document.getElementById('chatLogContainer').scrollHeight;
+            document.getElementById('chatLogContainer').scrollTop = 0;
 
 
             room.subscribeRoomState(() => {
