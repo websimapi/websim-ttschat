@@ -175,6 +175,7 @@
         }
         .voice-dropdown-container {
             flex: 1;
+            position: relative;
         }
         .voice-dropdown-label {
             display: none;
@@ -182,12 +183,16 @@
 
         #voice-dropdown {
             width: 100%;
-            padding: 10px 12px;
+            padding: 10px 12px 10px 40px; /* Make space for button */
             border-radius: 5px;
             border: 1px solid var(--background-tertiary);
             background: var(--background-secondary);
             color: var(--text-normal);
             font-size: 0.9rem;
+            -webkit-appearance: none;
+            -moz-appearance: none;
+            appearance: none;
+            cursor: pointer;
         }
         #voice-dropdown option {
             background: var(--background-secondary);
@@ -222,41 +227,30 @@
             margin: 0;
         }
 
-        /* This style was for a removed element, but let's keep it in case it's re-added. */
-        #selected-voice-preview {
-            background: rgba(0,0,0,0.1);
-            padding: 6px 10px;
-            border-radius: 5px;
-            border-left: 3px solid var(--yellow);
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            height: 44px;
-            margin: 0;
-        }
-        .preview-title {
-            color: var(--header-primary);
-            font-weight: bold;
-            font-size: 0.9rem;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            padding-right: 5px;
-        }
-        .preview-play-btn {
+        #preview-play-btn {
+            position: absolute;
+            left: 6px;
+            top: 50%;
+            transform: translateY(-50%);
             background: var(--brand-experiment);
             border: none;
-            border-radius: 5px;
-            padding: 4px 8px;
-            color: white;
-            font-weight: bold;
-            cursor: pointer;
-            font-size: 0.8rem;
-            transition: all 0.2s ease;
+            border-radius: 50%;
+            width: 28px;
+            height: 28px;
+            padding: 0;
             margin: 0;
-            flex-shrink: 0;
+            color: white;
+            font-size: 1rem;
+            line-height: 28px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            z-index: 2;
         }
-        .preview-play-btn.playing {
+        #preview-play-btn:hover {
+            background: var(--brand-experiment-hover);
+        }
+        #preview-play-btn.playing {
             background: #43b581;
         }
 
@@ -403,10 +397,6 @@
         .use-tts-button:hover { background: var(--brand-experiment-hover); }
         .playing { background: #43b581 !important; }
         
-        #preview-voice-btn.playing {
-            background: #43b581;
-        }
-        
         .spinner {
             border: 2px solid rgba(255, 255, 255, 0.3);
             border-radius: 50%;
@@ -445,12 +435,12 @@
                     <div class="right-controls">
                          <div class="voice-selector-container">
                             <div class="voice-dropdown-container">
+                                <button class="preview-play-btn" id="preview-play-btn" onclick="playPreview()" style="display: none;">▶</button>
                                 <label for="voice-dropdown" class="voice-dropdown-label">Select Voice:</label>
                                 <select id="voice-dropdown" onchange="selectVoiceFromDropdown()">
                                     <option value="">Choose a voice...</option>
                                 </select>
                             </div>
-                            <button id="preview-voice-btn" onclick="playPreview()" title="Preview Selected Voice">▶️</button>
                             <button id="random-voice-btn" onclick="selectRandomVoice()" title="Select Random Voice">🎲</button>
                         </div>
     
@@ -676,6 +666,7 @@
             const selectedIndex = dropdown.value;
             
             if (selectedIndex === '') {
+                hideVoicePreview();
                 selectedVoiceForTTS = null;
                 return;
             }
@@ -699,55 +690,49 @@
                 previewAudio.pause();
                 previewAudio = null;
             }
-            const previewBtn = document.getElementById('preview-voice-btn');
-            previewBtn.textContent = '▶️';
-            previewBtn.classList.remove('playing');
+            const playBtn = document.getElementById('preview-play-btn');
+            playBtn.textContent = '▶';
+            playBtn.classList.remove('playing');
             
-            showVoicePreview(voice);
+            showVoicePreview();
         }
 
-        function showVoicePreview(voice) {
-            const preview = document.getElementById('selected-voice-preview');
-            document.getElementById('preview-title').textContent = `${voice.title}`;
-            preview.style.display = 'flex';
+        function showVoicePreview() {
+            document.getElementById('preview-play-btn').style.display = 'block';
         }
 
         function hideVoicePreview() {
-            document.getElementById('selected-voice-preview').style.display = 'none';
+            const playBtn = document.getElementById('preview-play-btn');
+            playBtn.style.display = 'none';
+            if (previewAudio) {
+                previewAudio.pause();
+                previewAudio = null;
+            }
+            playBtn.textContent = '▶';
+            playBtn.classList.remove('playing');
         }
 
         function playPreview() {
-            if (!selectedVoiceForTTS) {
-                // Briefly indicate to user that a voice must be selected.
-                const btn = document.getElementById('preview-voice-btn');
-                const originalText = btn.textContent;
-                if(btn.disabled) return;
-                
-                btn.textContent = '...';
-                btn.disabled = true;
-                setTimeout(() => {
-                    btn.textContent = originalText;
-                    btn.disabled = false;
-                }, 500);
-                return;
-            };
+            if (!selectedVoiceForTTS) return;
             
-            const button = document.getElementById('preview-voice-btn');
+            const button = document.getElementById('preview-play-btn');
 
             if (previewAudio && !previewAudio.paused) {
                 previewAudio.pause();
-                button.textContent = '▶️';
-                button.classList.remove('playing');
-                return;
+                return; // onpause event will handle button state
             }
 
             // If different audio or no audio, create new
             if (!previewAudio || previewAudio.src !== new URL(selectedVoiceForTTS.file, window.location.href).href) {
                  previewAudio = new Audio(selectedVoiceForTTS.file);
                  previewAudio.onended = function() {
-                    button.textContent = '▶️';
+                    button.textContent = '▶';
                     button.classList.remove('playing');
                 };
+                 previewAudio.onpause = function() {
+                    button.textContent = '▶';
+                    button.classList.remove('playing');
+                 };
             }
 
             previewAudio.play();
