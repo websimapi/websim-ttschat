@@ -402,6 +402,10 @@
         .use-tts-button:hover { background: var(--brand-experiment-hover); }
         .playing { background: #43b581 !important; }
         
+        #preview-voice-btn.playing {
+            background: #43b581;
+        }
+        
         .spinner {
             border: 2px solid rgba(255, 255, 255, 0.3);
             border-radius: 50%;
@@ -436,10 +440,6 @@
                      <button id="load-more-btn" class="load-more-btn" style="display: none;">Load More Messages</button>
                 </div>
                 <div class="chat-input-area">
-                    <div id="selected-voice-preview" style="display: none;">
-                        <span class="preview-title" id="preview-title"></span>
-                        <button class="preview-play-btn" id="preview-play-btn" onclick="playPreview()">▶</button>
-                    </div>
                     <textarea id="tts-text" placeholder="Type a message..." rows="2"></textarea>
                     <div class="right-controls">
                          <div class="voice-selector-container">
@@ -449,6 +449,7 @@
                                     <option value="">Choose a voice...</option>
                                 </select>
                             </div>
+                            <button id="preview-voice-btn" onclick="playPreview()" title="Preview Selected Voice">▶️</button>
                             <button id="random-voice-btn" onclick="selectRandomVoice()" title="Select Random Voice">🎲</button>
                         </div>
     
@@ -674,7 +675,6 @@
             const selectedIndex = dropdown.value;
             
             if (selectedIndex === '') {
-                hideVoicePreview();
                 selectedVoiceForTTS = null;
                 return;
             }
@@ -698,7 +698,9 @@
                 previewAudio.pause();
                 previewAudio = null;
             }
-            document.getElementById('preview-play-btn').textContent = '▶';
+            const previewBtn = document.getElementById('preview-voice-btn');
+            previewBtn.textContent = '▶️';
+            previewBtn.classList.remove('playing');
             
             showVoicePreview(voice);
         }
@@ -714,13 +716,26 @@
         }
 
         function playPreview() {
-            if (!selectedVoiceForTTS) return;
+            if (!selectedVoiceForTTS) {
+                // Briefly indicate to user that a voice must be selected.
+                const btn = document.getElementById('preview-voice-btn');
+                const originalText = btn.textContent;
+                if(btn.disabled) return;
+                
+                btn.textContent = '...';
+                btn.disabled = true;
+                setTimeout(() => {
+                    btn.textContent = originalText;
+                    btn.disabled = false;
+                }, 500);
+                return;
+            };
             
-            const button = document.getElementById('preview-play-btn');
+            const button = document.getElementById('preview-voice-btn');
 
             if (previewAudio && !previewAudio.paused) {
                 previewAudio.pause();
-                button.textContent = '▶';
+                button.textContent = '▶️';
                 button.classList.remove('playing');
                 return;
             }
@@ -729,7 +744,7 @@
             if (!previewAudio || previewAudio.src !== new URL(selectedVoiceForTTS.file, window.location.href).href) {
                  previewAudio = new Audio(selectedVoiceForTTS.file);
                  previewAudio.onended = function() {
-                    button.textContent = '▶';
+                    button.textContent = '▶️';
                     button.classList.remove('playing');
                 };
             }
