@@ -130,7 +130,8 @@
             padding: 10px 20px 20px 20px;
             background-color: var(--background-primary);
             display: flex;
-            flex-direction: column;
+            align-items: flex-start;
+            gap: 10px;
         }
 
         .input-controls-wrapper {
@@ -147,18 +148,19 @@
             border-radius: 8px;
             border: none;
             background: var(--background-secondary);
-            padding: 10px;
+            padding: 12px;
             color: var(--text-normal);
             font-size: 1rem;
-            resize: vertical;
+            resize: none;
             margin: 0;
+            line-height: 1.4;
         }
 
         .right-controls {
             display: flex;
             flex-direction: column;
             gap: 8px;
-            width: 180px;
+            width: 220px;
             flex-shrink: 0;
         }
 
@@ -196,29 +198,26 @@
             background: var(--brand-experiment);
             border: none;
             border-radius: 5px;
-            padding: 10px 15px;
             color: white;
             font-weight: bold;
             cursor: pointer;
-            font-size: 1rem;
             transition: all 0.2s ease;
-            height: 38px;
         }
         #random-voice-btn {
             font-size: 1.2rem;
             padding: 0;
-            width: 38px;
-            line-height: 38px;
+            width: 44px;
+            height: 44px;
+            line-height: 44px;
         }
         #random-voice-btn:hover, #send-chat-btn:hover {
             background: var(--brand-experiment-hover);
         }
         #send-chat-btn {
-            padding: 0 15px;
+            font-size: 1rem;
             width: 100%;
             margin: 0;
-            height: auto;
-            min-height: 44px;
+            height: 44px;
         }
 
         #selected-voice-preview {
@@ -229,7 +228,7 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
-            height: 38px;
+            height: 44px;
             margin: 0;
         }
         .preview-title {
@@ -435,6 +434,7 @@
                      <button id="load-more-btn" class="load-more-btn" style="display: none;">Load More Messages</button>
                 </div>
                 <div class="chat-input-area">
+                    <textarea id="tts-text" placeholder="Type a message..." rows="1"></textarea>
                     <div class="right-controls">
                          <div class="voice-selector-container">
                             <div class="voice-dropdown-container">
@@ -450,9 +450,6 @@
                             <span class="preview-title" id="preview-title"></span>
                             <button class="preview-play-btn" id="preview-play-btn" onclick="playPreview()">▶</button>
                         </div>
-                    </div>
-                    <div class="input-controls-wrapper">
-                        <textarea id="tts-text" placeholder="Type a message..."></textarea>
                         <button id="send-chat-btn">Send</button>
                     </div>
                 </div>
@@ -649,6 +646,11 @@
             document.querySelectorAll('.sidebar-button').forEach(btn => btn.classList.remove('active'));
             document.getElementById(tabName + '-tab').classList.add('active');
             button.classList.add('active');
+        }
+
+        function autoGrowTextarea(element) {
+            element.style.height = 'auto'; // Reset height
+            element.style.height = (element.scrollHeight) + 'px';
         }
 
         function populateVoiceDropdown() {
@@ -957,8 +959,11 @@
         async function main() {
             await room.initialize();
             
+            const ttsTextarea = document.getElementById('tts-text');
+            ttsTextarea.addEventListener('input', () => autoGrowTextarea(ttsTextarea));
+            
             document.getElementById('send-chat-btn').addEventListener('click', sendChatMessage);
-            document.getElementById('tts-text').addEventListener('keydown', (event) => {
+            ttsTextarea.addEventListener('keydown', (event) => {
                 if (event.key === 'Enter' && !event.shiftKey) {
                     event.preventDefault();
                     sendChatMessage();
