@@ -3,421 +3,374 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Actor Voice Chat Room</title>
+    <title>Voice Chat Room</title>
     <style>
+        :root {
+            --background-primary: #36393f;
+            --background-secondary: #2f3136;
+            --background-tertiary: #202225;
+            --header-primary: #ffffff;
+            --header-secondary: #b9bbbe;
+            --text-normal: #dcddde;
+            --text-muted: #72767d;
+            --brand-experiment: #5865f2;
+            --brand-experiment-hover: #4e5adf;
+            --yellow: #ffd700;
+        }
+
+        *, *::before, *::after {
+            box-sizing: border-box;
+        }
+
         body {
             font-family: 'Arial', sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: var(--background-primary);
             margin: 0;
             padding: 0;
             height: 100vh;
-            color: white;
+            color: var(--text-normal);
             display: flex;
-            flex-direction: column;
-            overflow: hidden; /* Prevent body scroll */
+            overflow: hidden;
         }
-        
-        .container {
-            max-width: 1200px;
-            margin: 0 auto;
-            width: 100%;
+
+        /* App Layout */
+        .app-layout {
+            display: flex;
+            width: 100vw;
             height: 100vh;
+        }
+
+        .sidebar {
+            width: 72px;
+            background: var(--background-tertiary);
+            flex-shrink: 0;
+            padding: 12px 0;
             display: flex;
             flex-direction: column;
-            padding: 20px;
-            box-sizing: border-box;
-        }
-        
-        h1, h2 {
-            text-align: center;
-            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+            align-items: center;
+            gap: 10px;
         }
 
-        h1 {
-            font-size: 3rem;
-            margin-bottom: 40px;
-        }
-
-        h2 {
-            font-size: 2.5rem;
-            margin-bottom: 30px;
-        }
-
-        /* Tab Navigation Styles */
-        .tab-navigation {
-            display: flex;
-            justify-content: center;
-            margin-bottom: 40px;
-            background: rgba(255, 255, 255, 0.1);
-            border-radius: 15px;
-            padding: 5px;
-            backdrop-filter: blur(10px);
-        }
-
-        .tab-button {
-            flex: 1;
-            max-width: 200px;
-            padding: 15px 20px;
-            background: transparent;
+        .sidebar-button {
+            width: 48px;
+            height: 48px;
+            border-radius: 50%;
+            background: var(--background-secondary);
+            color: var(--header-secondary);
             border: none;
-            color: rgba(255, 255, 255, 0.7);
+            font-size: 24px;
             cursor: pointer;
-            border-radius: 10px;
-            font-size: 1.1rem;
-            font-weight: bold;
-            transition: all 0.3s ease;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
         }
 
-        .tab-button.active {
-            background: rgba(255, 255, 255, 0.2);
+        .sidebar-button:hover {
+            border-radius: 16px;
+            background: var(--brand-experiment);
             color: white;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
         }
 
-        .tab-button:hover:not(.active) {
-            background: rgba(255, 255, 255, 0.1);
-            color: rgba(255, 255, 255, 0.9);
+        .sidebar-button.active {
+            border-radius: 16px;
+            background: var(--brand-experiment);
+            color: white;
         }
 
-        /* Tab Content Styles */
-        .tab-content {
-            display: none;
+        .main-content {
             flex-grow: 1;
+            display: flex;
+            height: 100vh;
+        }
+
+        .tab-content {
+            width: 100%;
+            height: 100%;
+            display: none;
             flex-direction: column;
-            overflow: hidden; /* Prevent content from spilling */
         }
 
         .tab-content.active {
             display: flex;
         }
 
-        /* TTS/Chat Tab Styles */
-        .chat-container {
-            max-width: 800px;
-            margin: 0 auto;
-            padding: 0 20px;
-            width: 100%;
-            display: flex;
-            flex-direction: column;
+        /* Chat Tab Styles */
+        .chat-log-container {
             flex-grow: 1;
-            overflow: hidden; /* Contain children */
+            overflow-y: auto;
+            padding: 20px 20px 0 20px;
+        }
+        
+        .load-more-btn {
+            display: block;
+            margin: 0 auto 20px auto;
+            padding: 8px 16px;
+            border: none;
+            border-radius: 5px;
+            background-color: var(--background-secondary);
+            color: var(--text-normal);
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+        .load-more-btn:hover {
+            background-color: #40444b;
         }
 
-        .chat-controls-container {
-            padding-top: 20px;
-            background: linear-gradient(to top, rgba(118, 75, 162, 1) 0%, rgba(102, 126, 234, 0) 100%);
-            flex-shrink: 0; /* Prevent this container from shrinking */
+
+        .chat-input-area {
+            flex-shrink: 0;
+            padding: 20px;
+            background-color: var(--background-primary);
+            margin: 0 20px;
+        }
+
+        #tts-text {
+            width: 100%;
+            min-height: 44px;
+            max-height: 200px;
+            border-radius: 8px;
+            border: none;
+            background: var(--background-secondary);
+            padding: 10px;
+            color: var(--text-normal);
+            font-size: 1rem;
+            resize: vertical;
+            margin-top: 15px;
+        }
+        #tts-text::placeholder {
+            color: var(--text-muted);
         }
 
         .voice-selector-container {
             display: flex;
             gap: 15px;
-            margin-bottom: 30px;
             align-items: flex-end;
         }
-
         .voice-dropdown-container {
             flex: 1;
         }
-
         .voice-dropdown-label {
             display: block;
             margin-bottom: 8px;
             font-weight: bold;
-            color: #ffd700;
+            color: var(--header-secondary);
+            font-size: 0.9rem;
         }
 
         #voice-dropdown {
             width: 100%;
-            padding: 12px 15px;
-            border-radius: 10px;
-            border: 1px solid rgba(255, 255, 255, 0.3);
-            background: rgba(255, 255, 255, 0.1);
-            color: white;
+            padding: 10px 12px;
+            border-radius: 5px;
+            border: 1px solid var(--background-tertiary);
+            background: var(--background-secondary);
+            color: var(--text-normal);
             font-size: 1rem;
-            backdrop-filter: blur(10px);
         }
-
         #voice-dropdown option {
-            background: #4a5568;
-            color: white;
+            background: var(--background-secondary);
+            color: var(--text-normal);
         }
 
-        #random-voice-btn {
-            background: linear-gradient(45deg, #ff6b6b, #ee5a24);
+        #random-voice-btn, #send-chat-btn {
+            background: var(--brand-experiment);
             border: none;
-            border-radius: 10px;
-            padding: 12px 20px;
+            border-radius: 5px;
+            padding: 10px 15px;
             color: white;
             font-weight: bold;
             cursor: pointer;
             font-size: 1rem;
-            transition: all 0.3s ease;
+            transition: all 0.2s ease;
+        }
+        #random-voice-btn:hover, #send-chat-btn:hover {
+            background: var(--brand-experiment-hover);
+        }
+        #send-chat-btn {
+            padding: 12px 20px;
+            width: 100%;
+            margin-top: 10px;
         }
 
-        #random-voice-btn:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 5px 15px rgba(255, 107, 107, 0.4);
+        #selected-voice-preview {
+            background: rgba(0,0,0,0.1);
+            padding: 10px;
+            border-radius: 5px;
+            margin-top: 15px;
+            border-left: 3px solid var(--yellow);
         }
-
-        .selected-voice-preview {
-            background: rgba(0, 0, 0, 0.2);
-            padding: 20px;
-            border-radius: 10px;
-            margin-bottom: 20px;
-            border: 1px solid rgba(255, 255, 255, 0.2);
-        }
-
         .preview-title {
-            color: #ffd700;
+            color: var(--header-primary);
             font-weight: bold;
-            font-size: 1.2rem;
-            margin-bottom: 10px;
         }
-
-        .preview-script {
-            font-style: italic;
-            opacity: 0.9;
-            margin-bottom: 15px;
-            line-height: 1.5;
-        }
-
-        .preview-controls {
-            display: flex;
-            gap: 10px;
-        }
-
         .preview-play-btn {
-            background: linear-gradient(45deg, #2ecc71, #27ae60);
+            background: var(--brand-experiment);
             border: none;
-            border-radius: 20px;
-            padding: 8px 16px;
+            border-radius: 5px;
+            padding: 6px 12px;
             color: white;
             font-weight: bold;
             cursor: pointer;
             font-size: 0.9rem;
-            transition: all 0.3s ease;
+            transition: all 0.2s ease;
+            margin-top: 8px;
+        }
+        .preview-play-btn.playing {
+            background: #43b581;
         }
 
-        .preview-play-btn:hover {
-            transform: scale(1.05);
-        }
-        
-        .voices-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
-            gap: 25px;
-            margin-bottom: 60px;
-            flex-grow: 1;
-            overflow-y: auto;
-            padding: 5px; /* Add some padding for scrollbar */
-        }
-        
-        .voice-card {
-            background: rgba(255, 255, 255, 0.1);
-            backdrop-filter: blur(10px);
-            border-radius: 15px;
-            padding: 25px;
-            box-shadow: 0 8px 32px rgba(0,0,0,0.2);
-            border: 2px solid rgba(255, 255, 255, 0.2);
-            transition: transform 0.3s ease, box-shadow 0.3s ease, border-color 0.3s ease;
-            display: flex;
-            flex-direction: column;
-        }
-        
-        .voice-card:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 12px 40px rgba(0,0,0,0.3);
-        }
 
-        .voice-card.selected {
-            border-color: #ffd700;
-            box-shadow: 0 0 25px rgba(255, 215, 0, 0.5);
-        }
-        
-        .voice-title {
-            font-size: 1.5rem;
-            font-weight: bold;
-            margin-bottom: 15px;
-            color: #ffd700;
-        }
-        
-        .voice-script {
-            font-style: italic;
-            margin-bottom: 20px;
-            line-height: 1.6;
-            opacity: 0.9;
-            flex-grow: 1;
-        }
-        
-        .card-buttons {
-            display: flex;
-            gap: 10px;
-        }
-
-        .play-button, .use-tts-button {
-            border: none;
-            border-radius: 25px;
-            padding: 12px 0;
-            color: white;
-            font-weight: bold;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            width: 100%;
-            font-size: 1rem;
-        }
-
-        .play-button {
-            background: linear-gradient(45deg, #ff6b6b, #ee5a24);
-        }
-        
-        .use-tts-button {
-            background: linear-gradient(45deg, #487fee, #3259a8);
-        }
-
-        .play-button:hover, .use-tts-button:hover {
-            transform: scale(1.05);
-        }
-        
-        .play-button:active, .use-tts-button:active {
-            transform: scale(0.98);
-        }
-        
-        .playing {
-            background: linear-gradient(45deg, #2ecc71, #27ae60) !important;
-        }
-        
-        .controls {
-            text-align: center;
-            margin-bottom: 30px;
-        }
-        
-        .control-button {
-            background: rgba(255, 255, 255, 0.2);
-            border: 1px solid rgba(255, 255, 255, 0.3);
-            border-radius: 20px;
-            padding: 10px 20px;
-            color: white;
-            cursor: pointer;
-            margin: 0 10px;
-            transition: all 0.3s ease;
-            font-size: 1rem;
-        }
-        
-        .control-button:hover {
-            background: rgba(255, 255, 255, 0.3);
-        }
-
-        #tts-text {
-            width: 100%;
-            min-height: 80px;
-            border-radius: 10px;
-            border: 1px solid rgba(255, 255, 255, 0.3);
-            background: rgba(255, 255, 255, 0.1);
-            padding: 15px;
-            color: white;
-            font-size: 1rem;
-            resize: vertical;
-            margin-bottom: 20px;
-        }
-
-        #tts-text::placeholder {
-            color: rgba(255, 255, 255, 0.6);
-        }
-
-        #send-chat-btn {
-             background: linear-gradient(45deg, #6366f1, #8b5cf6);
-             padding: 15px 30px;
-             border-radius: 25px;
-             font-size: 1.1rem;
-             font-weight: bold;
-        }
-        #send-chat-btn:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 5px 15px rgba(99, 102, 241, 0.4);
-        }
-
-        /* Chat Log / Gallery Styles */
-        .chat-log-container {
-            flex-grow: 1;
-            overflow-y: auto;
-            padding-right: 15px; /* for scrollbar */
-            margin-bottom: 20px;
-        }
-
+        /* Chat Message Styles */
         .chat-message {
-            background: rgba(255, 255, 255, 0.1);
-            backdrop-filter: blur(10px);
-            border-radius: 15px;
-            padding: 25px;
-            margin-bottom: 20px;
-            border: 1px solid rgba(255, 255, 255, 0.2);
-            transition: transform 0.2s ease;
-        }
-
-        .chat-message:hover {
-            transform: translateY(-2px);
-        }
-
-        .chat-header {
             display: flex;
-            align-items: center;
-            margin-bottom: 15px;
-            gap: 15px;
+            padding: 10px 0;
+            transition: background-color 0.2s;
+            border-radius: 5px;
         }
-
+        .chat-message:hover {
+            background-color: rgba(255,255,255,0.02);
+        }
         .user-avatar {
             width: 40px;
             height: 40px;
             border-radius: 50%;
-            border: 2px solid rgba(255, 255, 255, 0.3);
+            margin-right: 15px;
+            flex-shrink: 0;
         }
-
-        .chat-info {
+        .chat-content {
             flex-grow: 1;
         }
-
+        .chat-header {
+            display: flex;
+            align-items: baseline;
+            gap: 10px;
+            margin-bottom: 5px;
+        }
         .username {
             font-weight: bold;
-            color: #ffd700;
-            font-size: 1.1rem;
+            color: var(--header-primary);
+            font-size: 1rem;
         }
-
-        .voice-type {
-            color: rgba(255, 255, 255, 0.8);
-            font-size: 0.9rem;
-        }
-
         .timestamp {
-            color: rgba(255, 255, 255, 0.6);
+            color: var(--text-muted);
+            font-size: 0.75rem;
+        }
+        .chat-text {
+            color: var(--text-normal);
+            line-height: 1.5;
+            margin-bottom: 8px;
+            word-wrap: break-word;
+        }
+        .chat-audio {
+            width: 100%;
+            max-width: 400px;
+            height: 40px;
+        }
+        .voice-type {
             font-size: 0.8rem;
+            color: var(--text-muted);
+            font-style: italic;
         }
 
-        .chat-text {
+
+        /* Voice Collection Tab */
+        #voices-tab {
+            background-color: var(--background-primary);
+            padding: 20px;
+            overflow: hidden;
+        }
+        .voices-header {
+            text-align: center;
+            margin-bottom: 20px;
+            flex-shrink: 0;
+        }
+        .voices-header h2 {
+            color: var(--header-primary);
+            margin: 0 0 20px 0;
+        }
+
+        .control-button {
+            background: var(--background-secondary);
+            border: none;
+            border-radius: 5px;
+            padding: 10px 20px;
+            color: var(--text-normal);
+            cursor: pointer;
+            margin: 0 10px;
+            transition: background-color 0.2s ease;
+        }
+        .control-button:hover {
+            background-color: #40444b;
+        }
+        
+        .voices-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+            gap: 20px;
+            flex-grow: 1;
+            overflow-y: auto;
+            padding: 5px 20px 5px 5px; 
+        }
+        .voice-card {
+            background: var(--background-secondary);
+            border-radius: 8px;
+            padding: 20px;
+            border: 1px solid var(--background-tertiary);
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+            display: flex;
+            flex-direction: column;
+        }
+        .voice-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+        }
+        .voice-card.selected {
+            border-color: var(--yellow);
+            box-shadow: 0 0 15px rgba(255, 215, 0, 0.3);
+        }
+        .voice-title {
+            font-size: 1.25rem;
+            font-weight: bold;
+            margin-bottom: 10px;
+            color: var(--yellow);
+        }
+        .voice-script {
             font-style: italic;
             margin-bottom: 15px;
             line-height: 1.5;
-            padding: 10px 15px;
-            background: rgba(0, 0, 0, 0.1);
-            border-radius: 8px;
-            border-left: 3px solid #ffd700;
+            opacity: 0.9;
+            flex-grow: 1;
         }
-
-        .chat-audio {
+        .card-buttons {
+            display: flex;
+            gap: 10px;
+        }
+        .play-button, .use-tts-button {
+            border: none;
+            border-radius: 5px;
+            padding: 10px 0;
+            color: white;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.2s ease;
             width: 100%;
-            height: 40px;
+            font-size: 0.9rem;
         }
-
-        /* Loading Spinner */
+        .play-button { background: #f04747; }
+        .play-button:hover { background: #d84040; }
+        .use-tts-button { background: var(--brand-experiment); }
+        .use-tts-button:hover { background: var(--brand-experiment-hover); }
+        .playing { background: #43b581 !important; }
+        
         .spinner {
             border: 2px solid rgba(255, 255, 255, 0.3);
             border-radius: 50%;
             border-top: 2px solid white;
-            width: 18px;
-            height: 18px;
+            width: 14px;
+            height: 14px;
             animation: spin 1s linear infinite;
             display: inline-block;
-            margin-left: 10px;
+            margin-left: 8px;
             vertical-align: middle;
         }
 
@@ -425,27 +378,25 @@
             0% { transform: rotate(0deg); }
             100% { transform: rotate(360deg); }
         }
+
     </style>
 </head>
 <body>
-    <div class="container">
-        <h1>🎭 Actor Voice Chat Room</h1>
-        
-        <!-- Tab Navigation -->
-        <div class="tab-navigation">
-            <button class="tab-button active" onclick="switchTab('chat')">💬 Chat Room</button>
-            <button class="tab-button" onclick="switchTab('voices')">🎭 Voice Collection</button>
+    <div class="app-layout">
+        <div class="sidebar">
+            <button class="sidebar-button active" onclick="switchTab('chat', this)" title="Chat Room">💬</button>
+            <button class="sidebar-button" onclick="switchTab('voices', this)" title="Voice Collection">🎭</button>
         </div>
 
-        <!-- Chat Tab -->
-        <div id="chat-tab" class="tab-content active">
-            <div class="chat-container">
-                <h2>💬 Chat Log</h2>
+        <div class="main-content">
+            <!-- Chat Tab -->
+            <div id="chat-tab" class="tab-content active">
                 <div class="chat-log-container" id="chatLogContainer">
-                    <!-- Chat messages will appear here -->
+                     <button id="load-more-btn" class="load-more-btn" style="display: none;">Load More Messages</button>
+                     <div id="messages-wrapper"></div>
                 </div>
-                <div class="chat-controls-container">
-                    <div class="voice-selector-container">
+                <div class="chat-input-area">
+                     <div class="voice-selector-container">
                         <div class="voice-dropdown-container">
                             <label for="voice-dropdown" class="voice-dropdown-label">Select Voice:</label>
                             <select id="voice-dropdown" onchange="selectVoiceFromDropdown()">
@@ -461,24 +412,21 @@
                             <button class="preview-play-btn" id="preview-play-btn" onclick="playPreview()">▶ Preview</button>
                         </div>
                     </div>
-
-                    <textarea id="tts-text" placeholder="Select a voice, type a message, and press Enter to send..."></textarea>
-                    <div style="text-align: center;">
-                        <button id="send-chat-btn" class="control-button">Send</button>
-                    </div>
+                    <textarea id="tts-text" placeholder="Select a voice, type a message..."></textarea>
+                    <button id="send-chat-btn">Send Message</button>
                 </div>
             </div>
-        </div>
 
-        <!-- Voices Tab -->
-        <div id="voices-tab" class="tab-content">
-            <h2>🎭 Voice Collection</h2>
-            <div class="controls">
-                <button class="control-button" onclick="stopAll()">Stop All</button>
-                <button class="control-button" onclick="playRandomFromCollection()">Play Random</button>
-            </div>
-            <div class="voices-grid" id="voicesGrid">
-                <!-- Voice cards will be generated by JavaScript -->
+            <!-- Voices Tab -->
+            <div id="voices-tab" class="tab-content">
+                <div class="voices-header">
+                    <h2>🎭 Voice Collection</h2>
+                    <button class="control-button" onclick="stopAll()">Stop All</button>
+                    <button class="control-button" onclick="playRandomFromCollection()">Play Random</button>
+                </div>
+                <div class="voices-grid" id="voicesGrid">
+                    <!-- Voice cards will be generated by JavaScript -->
+                </div>
             </div>
         </div>
     </div>
@@ -642,49 +590,47 @@
         let currentAudio = null;
         let currentButton = null;
         let selectedVoiceForTTS = null;
-        let uploadedVoiceUrls = {}; // Cache for uploaded URLs
+        let uploadedVoiceUrls = {}; 
         let previewAudio = null;
 
-        // Audio queue for chat messages
         const audioQueue = [];
         let isAudioPlaying = false;
         let queueAudioPlayer;
 
-        // Tab switching functionality
-        function switchTab(tabName) {
-            document.querySelectorAll('.tab-content').forEach(content => {
-                content.classList.remove('active');
-            });
-            document.querySelectorAll('.tab-button').forEach(button => {
-                button.classList.remove('active');
-            });
+        // Chat log state
+        let allMessages = [];
+        const PAGE_SIZE = 20;
+        let displayedMessageCount = PAGE_SIZE;
+        let lastMessageIds = new Set();
+
+        function switchTab(tabName, button) {
+            document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
+            document.querySelectorAll('.sidebar-button').forEach(btn => btn.classList.remove('active'));
             document.getElementById(tabName + '-tab').classList.add('active');
-            event.target.classList.add('active');
+            button.classList.add('active');
         }
 
-        // Populate voice dropdown
         function populateVoiceDropdown() {
             const dropdown = document.getElementById('voice-dropdown');
-            voices.forEach((voice, index) => {
+            voices.sort((a,b) => a.title.localeCompare(b.title)).forEach((voice, index) => {
                 const option = document.createElement('option');
                 option.value = index;
                 option.textContent = voice.title;
                 dropdown.appendChild(option);
             });
         }
+        
+        function getVoiceIndexByTitle(title) {
+            return voices.findIndex(v => v.title === title);
+        }
 
-        // Select voice from dropdown
         function selectVoiceFromDropdown() {
             const dropdown = document.getElementById('voice-dropdown');
             const selectedIndex = dropdown.value;
             
             if (selectedIndex === '') {
                 hideVoicePreview();
-                if (previewAudio) {
-                    previewAudio.pause();
-                    previewAudio = null;
-                }
-                document.getElementById('preview-play-btn').textContent = '▶ Preview';
+                selectedVoiceForTTS = null;
                 return;
             }
             
@@ -712,13 +658,12 @@
 
         function showVoicePreview(voice) {
             const preview = document.getElementById('selected-voice-preview');
-            document.getElementById('preview-title').textContent = voice.title;
+            document.getElementById('preview-title').textContent = `Voice: ${voice.title}`;
             preview.style.display = 'block';
         }
 
         function hideVoicePreview() {
             document.getElementById('selected-voice-preview').style.display = 'none';
-            selectedVoiceForTTS = null;
         }
 
         function playPreview() {
@@ -726,29 +671,29 @@
             
             const button = document.getElementById('preview-play-btn');
 
-            if (!previewAudio) {
-                previewAudio = new Audio(selectedVoiceForTTS.file);
-                previewAudio.onended = function() {
+            if (previewAudio && !previewAudio.paused) {
+                previewAudio.pause();
+                button.textContent = '▶ Preview';
+                button.classList.remove('playing');
+                return;
+            }
+
+            // If different audio or no audio, create new
+            if (!previewAudio || previewAudio.src !== new URL(selectedVoiceForTTS.file, window.location.href).href) {
+                 previewAudio = new Audio(selectedVoiceForTTS.file);
+                 previewAudio.onended = function() {
                     button.textContent = '▶ Preview';
                     button.classList.remove('playing');
                 };
             }
 
-            if (previewAudio.paused) {
-                previewAudio.play();
-                button.textContent = '⏸️ Pause';
-                button.classList.add('playing');
-            } else {
-                previewAudio.pause();
-                button.textContent = '▶ Preview';
-                button.classList.remove('playing');
-            }
+            previewAudio.play();
+            button.textContent = '⏸️ Pause';
+            button.classList.add('playing');
         }
 
         async function uploadAudioFile(filename) {
-            if (uploadedVoiceUrls[filename]) {
-                return uploadedVoiceUrls[filename];
-            }
+            if (uploadedVoiceUrls[filename]) return uploadedVoiceUrls[filename];
             try {
                 const response = await fetch(filename);
                 const blob = await response.blob();
@@ -768,12 +713,8 @@
                     <div class="voice-title">${voice.title}</div>
                     <div class="voice-script">"${voice.script}"</div>
                     <div class="card-buttons">
-                        <button class="play-button" onclick="playVoice('${voice.file}', this)">
-                            ▶ Play
-                        </button>
-                        <button class="use-tts-button" onclick="selectForTTSFromCard(${index})">
-                            🎙️ Use for TTS
-                        </button>
+                        <button class="play-button" onclick="playVoice('${voice.file}', this)">▶ Play</button>
+                        <button class="use-tts-button" onclick="selectForTTSFromCard(${index})">🎙️ Use for TTS</button>
                     </div>
                 </div>
             `;
@@ -824,14 +765,16 @@
         function playRandomFromCollection() {
             stopAll();
             const randomIndex = Math.floor(Math.random() * voices.length);
-            const buttons = document.querySelectorAll('.play-button');
+            const buttons = document.querySelectorAll('#voicesGrid .play-button');
             playVoice(voices[randomIndex].file, buttons[randomIndex]);
         }
 
         function selectForTTSFromCard(index) {
-            switchTab('chat');
-            document.getElementById('voice-dropdown').value = index;
-            selectVoiceForTTS(index);
+            const voice = voices[index];
+            const dropdownIndex = getVoiceIndexByTitle(voice.title);
+            switchTab('chat', document.querySelector('.sidebar-button[onclick*="\'chat\'"]'));
+            document.getElementById('voice-dropdown').value = dropdownIndex;
+            selectVoiceForTTS(dropdownIndex);
             document.querySelectorAll('.voice-card').forEach(card => card.classList.remove('selected'));
             document.getElementById(`voice-card-${index}`).classList.add('selected');
         }
@@ -854,27 +797,25 @@
 
             try {
                 const voiceUrl = await uploadAudioFile(selectedVoiceForTTS.file);
-                const result = await websim.textToSpeech({
-                    text: text,
-                    voice_sample: voiceUrl
-                });
+                const result = await websim.textToSpeech({ text: text, voice_sample: voiceUrl });
 
-                // Add to own queue
                 addToQueue(result.url);
                 
-                // Broadcast for others to play
-                room.send({
-                    type: 'chat_message',
-                    audio_url: result.url,
-                    echo: false // Don't send back to self
-                });
-
-                // Save to persistent collection, which triggers UI update for everyone
-                await room.collection('generated_voice').create({
+                const myPeer = room.peers[room.clientId];
+                const messageId = `${Date.now()}-${room.clientId}`;
+                const newMessage = {
+                    id: messageId,
                     text: text,
                     voice_type: selectedVoiceForTTS.title,
                     audio_url: result.url,
-                    voice_sample_file: selectedVoiceForTTS.file
+                    clientId: room.clientId,
+                    username: myPeer.username,
+                    avatarUrl: myPeer.avatarUrl,
+                    createdAt: Date.now()
+                };
+
+                room.updateRoomState({
+                    messages: { [messageId]: newMessage }
                 });
                 
                 document.getElementById('tts-text').value = '';
@@ -884,14 +825,13 @@
                 alert('Sorry, there was an error sending the message. Please try again.');
             } finally {
                 generateBtn.disabled = false;
-                generateBtn.innerHTML = 'Send';
+                generateBtn.innerHTML = 'Send Message';
             }
         }
 
         function playNextInQueue() {
-            if (isAudioPlaying || audioQueue.length === 0) {
-                return;
-            }
+            if (isAudioPlaying || audioQueue.length === 0) return;
+
             isAudioPlaying = true;
             const audioUrl = audioQueue.shift();
             
@@ -921,36 +861,59 @@
             playNextInQueue();
         }
 
-        function renderChatLog(voices) {
+        function renderChatLog() {
             const container = document.getElementById('chatLogContainer');
-            if (voices.length === 0) {
-                container.innerHTML = '<p style="text-align: center; opacity: 0.7;">No messages yet. Be the first to say something!</p>';
-                return;
-            }
+            const wrapper = document.getElementById('messages-wrapper');
+            const loadMoreBtn = document.getElementById('load-more-btn');
+            
+            const isScrolledToBottom = container.scrollHeight - container.clientHeight <= container.scrollTop + 1;
+            const oldWrapperHeight = wrapper.scrollHeight;
 
-            container.innerHTML = voices.slice().reverse().map(voice => `
-                <div class="chat-message">
-                    <div class="chat-header">
-                        <img src="https://images.websim.com/avatar/${voice.username}" alt="${voice.username}" class="user-avatar">
-                        <div class="chat-info">
-                            <div class="username">@${voice.username}</div>
-                            <div class="voice-type">${voice.voice_type}</div>
-                            <div class="timestamp">${new Date(voice.created_at).toLocaleString()}</div>
+            const messagesToRender = allMessages.slice(-displayedMessageCount);
+
+            if (messagesToRender.length === 0) {
+                wrapper.innerHTML = '<p style="text-align: center; color: var(--text-muted);">No messages yet. Be the first to say something!</p>';
+            } else {
+                 wrapper.innerHTML = messagesToRender.map(msg => {
+                    const peer = room.peers[msg.clientId] || { username: msg.username, avatarUrl: msg.avatarUrl };
+                    return `
+                    <div class="chat-message" data-message-id="${msg.id}">
+                        <img src="${peer.avatarUrl}" alt="${peer.username}" class="user-avatar">
+                        <div class="chat-content">
+                            <div class="chat-header">
+                                <span class="username">${peer.username}</span>
+                                <span class="timestamp">${new Date(msg.createdAt).toLocaleString()}</span>
+                            </div>
+                             <p class="chat-text">${msg.text}</p>
+                             <div class="voice-type">(${msg.voice_type})</div>
+                             <audio controls class="chat-audio" src="${msg.audio_url}"></audio>
                         </div>
                     </div>
-                    <div class="chat-text">"${voice.text}"</div>
-                    <audio controls class="chat-audio">
-                        <source src="${voice.audio_url}" type="audio/wav">
-                    </audio>
-                </div>
-            `).join('');
-            container.scrollTop = container.scrollHeight;
+                `}).join('');
+            }
+           
+            if (allMessages.length > displayedMessageCount) {
+                loadMoreBtn.style.display = 'block';
+            } else {
+                loadMoreBtn.style.display = 'none';
+            }
+
+            if (isScrolledToBottom) {
+                container.scrollTop = container.scrollHeight;
+            } else if (messagesToRender.length > 0 && wrapper.scrollHeight > oldWrapperHeight) {
+                // Keep scroll position when loading more
+                container.scrollTop += (wrapper.scrollHeight - oldWrapperHeight);
+            }
+        }
+        
+        function handleLoadMore() {
+            displayedMessageCount += PAGE_SIZE;
+            renderChatLog();
         }
 
         async function main() {
             await room.initialize();
             
-            // Event Listeners
             document.getElementById('send-chat-btn').addEventListener('click', sendChatMessage);
             document.getElementById('tts-text').addEventListener('keydown', (event) => {
                 if (event.key === 'Enter' && !event.shiftKey) {
@@ -958,21 +921,38 @@
                     sendChatMessage();
                 }
             });
+            document.getElementById('load-more-btn').addEventListener('click', handleLoadMore);
 
-            // Initialize the page
             populateVoiceDropdown();
             document.getElementById('voicesGrid').innerHTML = voices.map(createVoiceCard).join('');
             
-            // Handle incoming realtime messages
-            room.onmessage = (event) => {
-                const data = event.data;
-                if (data.type === 'chat_message' && data.audio_url) {
-                    addToQueue(data.audio_url);
+            // Initial render
+            const initialMessages = room.roomState.messages || {};
+            lastMessageIds = new Set(Object.keys(initialMessages));
+            allMessages = Object.values(initialMessages).sort((a, b) => a.createdAt - b.createdAt);
+            renderChatLog();
+            document.getElementById('chatLogContainer').scrollTop = document.getElementById('chatLogContainer').scrollHeight;
+
+
+            room.subscribeRoomState(() => {
+                const messages = room.roomState.messages || {};
+                const currentMessageIds = new Set(Object.keys(messages));
+                let newMessagesExist = false;
+
+                for (const id of currentMessageIds) {
+                    if (!lastMessageIds.has(id)) {
+                        newMessagesExist = true;
+                        const newMessage = messages[id];
+                        if (newMessage.clientId !== room.clientId) {
+                            addToQueue(newMessage.audio_url);
+                        }
+                    }
                 }
-            };
-            
-            // Subscribe to gallery updates for the visual chat log
-            room.collection('generated_voice').subscribe(renderChatLog);
+                lastMessageIds = currentMessageIds;
+
+                allMessages = Object.values(messages).sort((a, b) => a.createdAt - b.createdAt);
+                renderChatLog();
+            });
         }
 
         main();
